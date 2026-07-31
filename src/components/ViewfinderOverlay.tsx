@@ -105,7 +105,7 @@ export const ViewfinderOverlay: React.FC<ViewfinderOverlayProps> = ({
   return (
     <div className={css.cpVfWindow}>
       <div className={css.cpVfToolbar}>
-        <span className={css.cpVfTitle}>📷 取景监视器</span>
+        <span className={css.cpVfTitle}><i>VF</i> 取景监视器</span>
         <div className={css.cpVfModes}>
           <button
             type="button"

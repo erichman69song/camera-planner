@@ -15,8 +15,8 @@ import { PathPoint } from '../types/project'
 import { calcFOV, calcDOF, deg2rad, generateId, sampleCameraPathAtTime } from './calc'
 import { SENSOR_PRESETS } from '../presets/sensors'
 
-const DEFAULT_CAMERA_COLOR = 0x7c83ff
-const SELECTED_CAMERA_COLOR = 0xffd93d
+const DEFAULT_CAMERA_COLOR = 0x5cc8ff
+const SELECTED_CAMERA_COLOR = 0xffc45d
 
 export class CameraRig {
   private scene: THREE.Scene
@@ -223,6 +223,50 @@ export class CameraRig {
     lens.userData = { cameraId: camera.id, part: 'lens' }
     group.add(lens)
 
+    // Field-of-view frustum: the primary spatial cue for camera planning.
+    const depth = 3.6
+    const verticalFov = deg2rad(calcFOV(camera.sensorH, camera.focal))
+    const halfHeight = Math.tan(verticalFov / 2) * depth
+    const halfWidth = halfHeight * (camera.sensorW / camera.sensorH)
+    const origin = new THREE.Vector3(0, 0, -0.42)
+    const corners = [
+      new THREE.Vector3(-halfWidth, halfHeight, -depth),
+      new THREE.Vector3(halfWidth, halfHeight, -depth),
+      new THREE.Vector3(halfWidth, -halfHeight, -depth),
+      new THREE.Vector3(-halfWidth, -halfHeight, -depth),
+    ]
+    const frustumPoints: THREE.Vector3[] = []
+    corners.forEach(corner => frustumPoints.push(origin, corner))
+    for (let i = 0; i < corners.length; i++) {
+      frustumPoints.push(corners[i], corners[(i + 1) % corners.length])
+    }
+    const frustumGeo = new THREE.BufferGeometry().setFromPoints(frustumPoints)
+    const frustumMat = new THREE.LineBasicMaterial({
+      color: camera.color,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false,
+    })
+    const frustum = new THREE.LineSegments(frustumGeo, frustumMat)
+    frustum.userData = { cameraId: camera.id, part: 'frustum' }
+    group.add(frustum)
+
+    const aimGeo = new THREE.BufferGeometry().setFromPoints([
+      origin,
+      new THREE.Vector3(0, 0, -depth - 0.8),
+    ])
+    const aimMat = new THREE.LineDashedMaterial({
+      color: camera.color,
+      dashSize: 0.22,
+      gapSize: 0.14,
+      transparent: true,
+      opacity: 0.9,
+    })
+    const aimLine = new THREE.Line(aimGeo, aimMat)
+    aimLine.computeLineDistances()
+    aimLine.userData = { cameraId: camera.id, part: 'aim' }
+    group.add(aimLine)
+
     group.position.set(camera.position.x, camera.position.y, camera.position.z)
     group.rotation.set(
       deg2rad(camera.rotation.pitch),
@@ -241,6 +285,12 @@ export class CameraRig {
     data.group.traverse((child) => {
       if (child instanceof THREE.Mesh && child.userData.part === 'body') {
         (child.material as THREE.MeshStandardMaterial).color.setHex(color)
+      }
+      if (
+        (child instanceof THREE.Line || child instanceof THREE.LineSegments) &&
+        (child.userData.part === 'frustum' || child.userData.part === 'aim')
+      ) {
+        (child.material as THREE.LineBasicMaterial).color.setHex(color)
       }
     })
   }

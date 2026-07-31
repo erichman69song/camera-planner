@@ -313,6 +313,21 @@ export class ActorRig {
     arrow.userData = { actorId: actor.id, part: 'arrow' }
     group.add(arrow)
 
+    // Ground footprint keeps actors readable against busy sets.
+    const baseGeo = new THREE.RingGeometry(0.34, 0.42, 32)
+    const baseMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    })
+    const base = new THREE.Mesh(baseGeo, baseMat)
+    base.rotation.x = -Math.PI / 2
+    base.position.y = 0.025
+    base.userData = { actorId: actor.id, part: 'base' }
+    group.add(base)
+
     // 设置位置和朝向
     group.position.set(actor.position.x, actor.position.y, actor.position.z)
     group.rotation.set(0, deg2rad(actor.rotation.yaw), 0)
@@ -391,6 +406,9 @@ export class ActorRig {
         (child.material as THREE.MeshStandardMaterial).color.setHex(color)
       }
       if (child instanceof THREE.Mesh && child.userData.part === 'arrow') {
+        (child.material as THREE.MeshBasicMaterial).color.setHex(color)
+      }
+      if (child instanceof THREE.Mesh && child.userData.part === 'base') {
         (child.material as THREE.MeshBasicMaterial).color.setHex(color)
       }
     })

@@ -50,6 +50,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
     historyPushed: boolean
   } | null>(null)
   const [engineReady, setEngineReady] = useState(false)
+  const [engineError, setEngineError] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -63,13 +64,20 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
     const container = containerRef.current
     if (!container) return
 
-    const scene = new SceneEngine({
-      container,
-      antialias: true,
-      shadows: true,
-      showGrid: true,
-      showAxes: true,
-    })
+    let scene: SceneEngine
+    try {
+      scene = new SceneEngine({
+        container,
+        antialias: true,
+        shadows: true,
+        showGrid: true,
+        showAxes: true,
+      })
+      setEngineError(null)
+    } catch {
+      setEngineError('当前环境未能启动 3D 视口')
+      return
+    }
 
     const cameraRig = new CameraRig(scene.scene)
     const objectLib = new ObjectLib(scene.scene)
@@ -468,6 +476,12 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
 
   // Cursor style based on tool
   const tool = store(s => s.tool)
+  const mode = store(s => s.mode)
+  const cameras = store(s => s.project.cameras)
+  const actors = store(s => s.project.actors)
+  const sceneObjects = store(s => s.project.scene.objects)
+  const sceneTemplate = store(s => s.project.scene.template)
+  const selectedCamera = cameras.find(camera => camera.id === selectedCameraId) ?? null
   const engine = engineRef.current
 
   // Right-click context menu handler
@@ -602,7 +616,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
               fov: 27.0,
               dof: { near: 2.5, far: 3.8, range: 1.3 },
               height: 1.6,
-              color: 0x7c83ff,
+              color: 0x5cc8ff,
               position: { x: gp.x, y: 1.6, z: gp.z },
               rotation: { yaw: 0, pitch: 0, roll: 0 },
             }
@@ -645,6 +659,18 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
         position: 'relative',
       }}
     >
+      <div className={css.cpViewportHeader}>
+        <span>
+          <small>SCENE / 3D BLOCKING</small>
+          <strong>{sceneTemplate.replace(/_/g, ' ').toUpperCase()}</strong>
+        </span>
+        <div className={css.cpViewportStats}>
+          <b>GRID 1m</b>
+          <span>{cameras.length} CAM</span>
+          <span>{actors.length} ACT</span>
+          <span>{sceneObjects.length} OBJ</span>
+        </div>
+      </div>
       <div
         ref={containerRef}
         className={css.cameraPlannerViewport}
@@ -655,6 +681,34 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
         }}
         onContextMenu={handleContextMenu}
       />
+      {engineError && (
+        <div className={css.cpViewportFallback} role="status">
+          <span>3D</span>
+          <strong>{engineError}</strong>
+          <p>界面与场景数据仍可加载；请在支持 WebGL 的浏览器中查看完整预演。</p>
+        </div>
+      )}
+      <div className={css.cpShotReadout}>
+        {selectedCamera ? (
+          <>
+            <small>ACTIVE CAMERA</small>
+            <strong>{selectedCamera.name}</strong>
+            <span>{selectedCamera.focal}mm</span>
+            <span>f/{selectedCamera.fstop.toFixed(1)}</span>
+            <span>FOV {selectedCamera.fov.toFixed(1)}°</span>
+          </>
+        ) : (
+          <>
+            <small>ACTIVE CAMERA</small>
+            <strong>未选择机位</strong>
+          </>
+        )}
+      </div>
+      <div className={css.cpViewportLegend}>
+        <span><i className={css.cpLegendPrimary} />5m 主网格</span>
+        <span><i className={css.cpLegendMinor} />1m 子网格</span>
+        <b>{mode.toUpperCase()} / {tool.toUpperCase()}</b>
+      </div>
       {engineReady && engine && (
         <ViewfinderOverlay
           scene={engine.scene}

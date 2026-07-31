@@ -20,7 +20,7 @@ const sampleData = {
       rotation: { yaw: -20, pitch: 0, roll: 0 },
       fov: 27.0,
       dof: { near: 4.65, far: 5.41, range: 0.76 },
-      color: 0x7c83ff,
+      color: 0x5cc8ff,
     },
     {
       id: 'cam2',

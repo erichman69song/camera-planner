@@ -22,15 +22,22 @@ export const BottomPanel: React.FC = () => {
   return (
     <div className={css.cpBottomPanel}>
       <div className={css.cpBottomTabs}>
+        <div className={css.cpBottomHeading}>
+          <small>SHOT SEQUENCE</small>
+          <strong>镜头编排</strong>
+        </div>
         {TABS.map(t => (
           <button
+            type="button"
             key={t.value}
             className={`${css.cpTabBtn} ${bottomTab === t.value ? css.active : ''}`}
             onClick={() => setBottomTab(t.value)}
+            aria-pressed={bottomTab === t.value}
           >
             {t.label}
           </button>
         ))}
+        <span className={css.cpBottomSummary}>{pathPoints.length} 个路径关键帧</span>
       </div>
       <div className={css.cpBottomContent}>
         {bottomTab === 'timeline' && <Timeline />}

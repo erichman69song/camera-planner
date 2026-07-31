@@ -35,7 +35,7 @@ export const CameraList: React.FC = () => {
       rotation: { yaw: Math.random() * 360 - 180, pitch: 0, roll: 0 },
       fov,
       dof,
-      color: 0x7c83ff,
+      color: 0x5cc8ff,
     }
 
     addCamera(newCamera)

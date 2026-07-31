@@ -16,6 +16,16 @@ const ROLE_LABELS: Record<ActorRole, string> = {
   extra: '群众',
 }
 
+const InspectorHeader: React.FC<{ title: string; meta: string }> = ({ title, meta }) => (
+  <div className={css.cpInspectorHeader}>
+    <span>
+      <small>INSPECTOR</small>
+      <strong>{title}</strong>
+    </span>
+    <em>{meta}</em>
+  </div>
+)
+
 export const PropertyPanel: React.FC = () => {
   const selectedCameraId = usePlannerStore(s => s.selectedCameraId)
   const selectedObjectId = usePlannerStore(s => s.selectedObjectId)
@@ -45,8 +55,10 @@ export const PropertyPanel: React.FC = () => {
 
   return (
     <div className={css.cpPropertyPanel}>
+      <InspectorHeader title="参数检查器" meta="未选择对象" />
       <div className={css.cpPlaceholder}>
-        <p>选择机位、角色或物体查看属性</p>
+        <span>↖</span>
+        <p>从场景或左侧列表选择机位、角色或置景</p>
       </div>
     </div>
   )
@@ -70,6 +82,7 @@ const ActorProperties: React.FC<ActorPropsProps> = ({ actor, onUpdate }) => {
 
   return (
     <div className={css.cpPropertyPanel}>
+      <InspectorHeader title={actor.name} meta={`${ROLE_LABELS[actor.role]} · ${actor.height.toFixed(2)}m`} />
       <div className={css.cpPanelSection}>
         <div className={css.cpSectionTitle}>角色属性</div>
 
@@ -185,6 +198,7 @@ const CameraProperties: React.FC<CameraPropsProps> = ({ camera, onUpdate }) => {
 
   return (
     <div className={css.cpPropertyPanel}>
+      <InspectorHeader title={camera.name} meta={`${camera.focal}mm · f/${camera.fstop.toFixed(1)}`} />
       <div className={css.cpPanelSection}>
         <div className={css.cpSectionTitle}>摄像机参数</div>
 
@@ -381,6 +395,7 @@ const ObjectProperties: React.FC<ObjectPropsProps> = ({ object, onUpdate }) => {
 
   return (
     <div className={css.cpPropertyPanel}>
+      <InspectorHeader title={object.type.toUpperCase()} meta={`ID ${object.id.slice(0, 8)}`} />
       <div className={css.cpPanelSection}>
         <div className={css.cpSectionTitle}>物体: {object.type}</div>
         <div className={css.cpCalcRow}>

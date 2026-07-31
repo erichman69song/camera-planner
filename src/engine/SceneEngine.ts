@@ -27,7 +27,10 @@ export class SceneEngine {
   private container: HTMLElement
   private animationId: number | null = null
   private gridHelper: THREE.GridHelper | null = null
+  private majorGridHelper: THREE.GridHelper | null = null
   private axesHelper: THREE.AxesHelper | null = null
+  private stageFloor: THREE.Mesh | null = null
+  private originMarker: THREE.Mesh | null = null
   private resizeObserver: ResizeObserver
   private frameCallbacks: Array<(delta: number) => void> = []
   private clock: THREE.Clock
@@ -37,8 +40,8 @@ export class SceneEngine {
       container,
       antialias = true,
       shadows = true,
-      backgroundColor = 0x0a0a14,
-      gridSize = 20,
+      backgroundColor = 0x26323d,
+      gridSize = 40,
       showGrid = true,
       showAxes = true,
     } = options
@@ -49,7 +52,7 @@ export class SceneEngine {
     // Scene
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(backgroundColor)
-    this.scene.fog = new THREE.FogExp2(backgroundColor, 0.015)
+    this.scene.fog = new THREE.FogExp2(backgroundColor, 0.008)
 
     // Camera
     const aspect = container.clientWidth / container.clientHeight || 1
@@ -64,6 +67,9 @@ export class SceneEngine {
     })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.setSize(container.clientWidth, container.clientHeight)
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1.05
     if (shadows) {
       this.renderer.shadowMap.enabled = true
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -78,10 +84,49 @@ export class SceneEngine {
     this.controls.minDistance = 2
     this.controls.maxDistance = 80
 
-    // Grid
+    // Neutral stage floor: separates the blocking space from the application chrome.
+    const floorGeometry = new THREE.PlaneGeometry(gridSize + 8, gridSize + 8)
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0x18222d,
+      roughness: 1,
+      metalness: 0,
+    })
+    this.stageFloor = new THREE.Mesh(floorGeometry, floorMaterial)
+    this.stageFloor.rotation.x = -Math.PI / 2
+    this.stageFloor.position.y = -0.025
+    this.stageFloor.receiveShadow = true
+    this.scene.add(this.stageFloor)
+
+    // Two-level metric grid: 1m subdivisions + brighter 5m structure.
     if (showGrid) {
-      this.gridHelper = new THREE.GridHelper(gridSize, gridSize, 0x1e1e38, 0x14142a)
+      this.gridHelper = new THREE.GridHelper(gridSize, gridSize, 0x8da2b7, 0x40566b)
+      const minorMaterial = this.gridHelper.material as THREE.LineBasicMaterial
+      minorMaterial.transparent = true
+      minorMaterial.opacity = 0.72
+      minorMaterial.depthWrite = false
+      this.gridHelper.position.y = 0.015
       this.scene.add(this.gridHelper)
+
+      this.majorGridHelper = new THREE.GridHelper(gridSize, gridSize / 5, 0xd5e1ec, 0x7890a8)
+      const majorMaterial = this.majorGridHelper.material as THREE.LineBasicMaterial
+      majorMaterial.transparent = true
+      majorMaterial.opacity = 0.66
+      majorMaterial.depthWrite = false
+      this.majorGridHelper.position.y = 0.02
+      this.scene.add(this.majorGridHelper)
+
+      const markerGeometry = new THREE.RingGeometry(0.32, 0.42, 32)
+      const markerMaterial = new THREE.MeshBasicMaterial({
+        color: 0xf4bf63,
+        transparent: true,
+        opacity: 0.95,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      })
+      this.originMarker = new THREE.Mesh(markerGeometry, markerMaterial)
+      this.originMarker.rotation.x = -Math.PI / 2
+      this.originMarker.position.y = 0.035
+      this.scene.add(this.originMarker)
     }
 
     // Axes
@@ -91,7 +136,7 @@ export class SceneEngine {
     }
 
     // Ambient light (base)
-    const ambient = new THREE.AmbientLight(0x404060, 0.3)
+    const ambient = new THREE.HemisphereLight(0xd8e8f5, 0x17212b, 0.72)
     this.scene.add(ambient)
 
     // Resize observer
@@ -133,6 +178,8 @@ export class SceneEngine {
   /** Toggle grid visibility */
   setGridVisible(visible: boolean): void {
     if (this.gridHelper) this.gridHelper.visible = visible
+    if (this.majorGridHelper) this.majorGridHelper.visible = visible
+    if (this.originMarker) this.originMarker.visible = visible
   }
 
   /** Toggle axes visibility */
@@ -144,7 +191,9 @@ export class SceneEngine {
   getHelperObjects(): THREE.Object3D[] {
     const out: THREE.Object3D[] = []
     if (this.gridHelper) out.push(this.gridHelper)
+    if (this.majorGridHelper) out.push(this.majorGridHelper)
     if (this.axesHelper) out.push(this.axesHelper)
+    if (this.originMarker) out.push(this.originMarker)
     return out
   }
 
