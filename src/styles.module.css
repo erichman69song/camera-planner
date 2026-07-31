@@ -1257,3 +1257,233 @@
 .cpContextMenuLabel {
   flex: 1;
 }
+
+
+/* ===== High-contrast theme (2026-07-31) ===== */
+
+.cameraPlanner {
+  color-scheme: dark;
+  --cp-bg: #080c12;
+  --cp-panel: #0d141e;
+  --cp-surface: #182433;
+  --cp-surface-hover: #213044;
+  --cp-border: #40516a;
+  --cp-border-soft: #2b394b;
+  --cp-text: #f7f9fc;
+  --cp-text-secondary: #c6d0dd;
+  --cp-text-muted: #9baabd;
+  --cp-accent: #62bdff;
+  --cp-accent-soft: #163d59;
+  --cp-focus: #8fd2ff;
+  color: var(--cp-text);
+  background: var(--cp-bg);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.cpToolbar {
+  padding-block: 8px;
+  background: #111923;
+  border-color: var(--cp-border-soft);
+}
+
+.cpSidebar,
+.cpPropertyPanel,
+.cpBottomPanel {
+  background: var(--cp-panel);
+  border-color: var(--cp-border-soft);
+}
+
+.cpSidebarTabs,
+.cpBottomTabs,
+.cpDialogHeader,
+.cpKeyframeSection {
+  border-color: var(--cp-border-soft);
+}
+
+.cpToolbarLabel,
+.cpTabBtn,
+.cpCameraMeta,
+.cpPaletteHint,
+.cpPaletteLabel,
+.cpTemplateEn,
+.cpTemplateCount,
+.cpField label,
+.cpFieldValue,
+.cpCalcRow,
+.cpTimelineTime,
+.cpTimelineMark,
+.cpCellNumber,
+.cpCellCamMeta,
+.cpKfPos,
+.cpKfTime,
+.cpPlaceholder,
+.cpHint,
+.cpEmpty,
+.cpDialogClose,
+.cpExportInfo,
+.cpLabel,
+.cpKfLabel,
+.kfIndex,
+.kfPos {
+  color: var(--cp-text-muted);
+}
+
+.cpToolbarBtn,
+.cpTimelineBtn,
+.cpBtnSm,
+.cpBtn {
+  min-height: 32px;
+  color: var(--cp-text-secondary);
+  background: var(--cp-surface);
+  border-color: var(--cp-border);
+}
+
+.cpToolbarBtn:hover,
+.cpTimelineBtn:hover,
+.cpBtnSm:hover,
+.cpBtn:hover,
+.cpTabBtn:hover {
+  color: var(--cp-text);
+  background: var(--cp-surface-hover);
+  border-color: #607794;
+}
+
+.cpToolbarBtn.active,
+.cpBtnSm.active,
+.cpCameraItem.selected,
+.cpPaletteItem.active {
+  color: var(--cp-accent);
+  background: var(--cp-accent-soft);
+  border-color: var(--cp-accent);
+  box-shadow: inset 0 0 0 1px var(--cp-accent);
+}
+
+.cpSectionTitle,
+.cpCellCamName,
+.kfTime {
+  color: var(--cp-accent);
+}
+
+.cpCameraItem,
+.cpPaletteItem,
+.cpTemplateCard,
+.cpStoryboardCell,
+.cpKeyframeItem,
+.keyframeItem,
+.cpPropsSection,
+.cpExportInfo {
+  color: var(--cp-text);
+  background: var(--cp-surface);
+  border-color: var(--cp-border-soft);
+}
+
+.cpCameraItem:hover,
+.cpPaletteItem:hover,
+.cpTemplateCard:hover,
+.cpStoryboardCell:hover {
+  background: var(--cp-surface-hover);
+  border-color: var(--cp-border);
+}
+
+.cpCameraName,
+.cpTemplateName,
+.cpCalcValue {
+  color: var(--cp-text);
+}
+
+.cpCameraDelete {
+  color: var(--cp-text-muted);
+  opacity: 0.75;
+}
+
+.cpField input[type="text"],
+.cpField input[type="number"],
+.cpField select,
+.cpInput,
+.cpSelect,
+.cpKfAction,
+.cpKfLabel input {
+  min-height: 32px;
+  color: var(--cp-text);
+  background: #0b111a;
+  border: 1px solid var(--cp-border);
+  font-size: 13px;
+}
+
+.cpField input:focus,
+.cpField select:focus,
+.cpInput:focus,
+.cpSelect:focus,
+.cpKfAction:focus,
+.cpKfLabel input:focus {
+  border-color: var(--cp-focus);
+  box-shadow: 0 0 0 3px rgba(98, 189, 255, 0.22);
+}
+
+.cpField input[type="range"],
+.cpTimelineSlider {
+  accent-color: var(--cp-accent);
+}
+
+.cpVfWindow,
+.cpContextMenu,
+.cpDialog {
+  color: var(--cp-text);
+  background: rgba(13, 20, 30, 0.97);
+  border-color: var(--cp-border);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.cpVfToolbar,
+.cpVfInfo {
+  color: var(--cp-text-secondary);
+  border-color: var(--cp-border-soft);
+  font-size: 11px;
+}
+
+.cpVfModeBtn {
+  color: var(--cp-text-muted);
+  border-color: var(--cp-border);
+  font-size: 10px;
+}
+
+.cpContextMenuItem {
+  color: var(--cp-text);
+}
+
+.cpDialogOverlay {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.cpExportJson {
+  color: var(--cp-text-secondary);
+  background: #070b11;
+  border-color: var(--cp-border);
+}
+
+.cameraPlanner ::-webkit-scrollbar-thumb {
+  background: #53667f;
+}
+
+.cameraPlanner ::-webkit-scrollbar-thumb:hover {
+  background: #6f86a3;
+}
+
+.cameraPlanner button:focus-visible,
+.cameraPlanner input:focus-visible,
+.cameraPlanner select:focus-visible {
+  outline: 2px solid var(--cp-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .cpSidebar {
+    width: 210px;
+  }
+
+  .cpPropertyPanel {
+    width: 230px;
+  }
+}
