@@ -22,8 +22,12 @@ function test(name: string, fn: () => void) {
     selectedCameraId: null,
     selectedObjectId: null,
     selectedActorId: null,
+    selectedLightId: null,
+    selectedModifierId: null,
     selectedPathPointId: null,
     pendingObjectType: null,
+    pendingLightType: null,
+    pendingModifierType: null,
     showGrid: true,
     showAxes: true,
     showFovCones: true,
@@ -74,6 +78,34 @@ const makeObject = (overrides: Record<string, unknown> = {}) => ({
   rotation: { yaw: 0, pitch: 0, roll: 0 },
   scale: { x: 1, y: 1, z: 1 },
   color: 0x888888,
+  ...overrides,
+})
+
+const makeLight = (overrides: Record<string, unknown> = {}) => ({
+  id: `light-${Math.random().toString(36).slice(2, 8)}`,
+  name: 'AREA-TEST',
+  type: 'area' as const,
+  position: { x: 2, y: 2.4, z: 2 },
+  rotation: { yaw: 0, pitch: 0, roll: 0 },
+  scale: { x: 1, y: 1, z: 1 },
+  color: 0xffe0c0,
+  intensity: 20,
+  distance: 12,
+  enabled: true,
+  ...overrides,
+})
+
+const makeModifier = (overrides: Record<string, unknown> = {}) => ({
+  id: `modifier-${Math.random().toString(36).slice(2, 8)}`,
+  name: 'SILK-TEST',
+  type: 'butterfly' as const,
+  position: { x: 0, y: 2.4, z: 1 },
+  rotation: { yaw: 0, pitch: 0, roll: 0 },
+  scale: { x: 1, y: 1, z: 1 },
+  color: 0xf2eee4,
+  transmission: 0.68,
+  diffusion: 0.88,
+  enabled: true,
   ...overrides,
 })
 
@@ -214,6 +246,45 @@ test('selectObject clears camera selection', () => {
   usePlannerStore.getState().selectObject(obj.id)
   assertEqual(usePlannerStore.getState().selectedCameraId, null)
   assertEqual(usePlannerStore.getState().selectedObjectId, obj.id)
+})
+
+// ============================================================
+// Lighting / grip CRUD
+// ============================================================
+
+console.log('\nLighting and grip CRUD:')
+
+test('addStageLight and updateStageLight persist practical lighting data', () => {
+  const light = makeLight()
+  usePlannerStore.getState().addStageLight(light)
+  usePlannerStore.getState().updateStageLight(light.id, {
+    intensity: 42,
+    scale: { x: 1.5, y: 1.2, z: 1 },
+  })
+  const stored = usePlannerStore.getState().project.scene.lights[0]
+  assertEqual(stored.intensity, 42)
+  assertEqual(stored.scale.x, 1.5)
+})
+
+test('light and modifier selection are mutually exclusive', () => {
+  const light = makeLight()
+  const modifier = makeModifier()
+  usePlannerStore.getState().addStageLight(light)
+  usePlannerStore.getState().addLightModifier(modifier)
+  usePlannerStore.getState().selectStageLight(light.id)
+  assertEqual(usePlannerStore.getState().selectedLightId, light.id)
+  usePlannerStore.getState().selectLightModifier(modifier.id)
+  assertEqual(usePlannerStore.getState().selectedLightId, null)
+  assertEqual(usePlannerStore.getState().selectedModifierId, modifier.id)
+})
+
+test('deleteLightModifier removes modifier and clears selection', () => {
+  const modifier = makeModifier()
+  usePlannerStore.getState().addLightModifier(modifier)
+  usePlannerStore.getState().selectLightModifier(modifier.id)
+  usePlannerStore.getState().deleteLightModifier(modifier.id)
+  assertEqual(usePlannerStore.getState().project.scene.modifiers.length, 0)
+  assertEqual(usePlannerStore.getState().selectedModifierId, null)
 })
 
 // ============================================================

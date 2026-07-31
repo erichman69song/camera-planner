@@ -9,6 +9,7 @@ import { SceneEngine } from '../engine/SceneEngine'
 import { CameraRig } from '../engine/CameraRig'
 import { ActorRig } from '../engine/ActorRig'
 import { PathSystem } from '../engine/PathSystem'
+import { LightSystem } from '../engine/LightSystem'
 import { usePlannerStore } from '../store/usePlannerStore'
 import { sampleActorAtTime, rad2deg } from '../engine/calc'
 import { Camera } from '../types/camera'
@@ -19,6 +20,7 @@ interface ViewfinderOverlayProps {
   cameraRig: CameraRig
   actorRig: ActorRig
   pathSystem: PathSystem
+  lightSystem: LightSystem
 }
 
 /** Prefer live mesh pose (path playback updates mesh / store). */
@@ -45,6 +47,7 @@ export const ViewfinderOverlay: React.FC<ViewfinderOverlayProps> = ({
   cameraRig,
   actorRig,
   pathSystem,
+  lightSystem,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const vfRef = useRef<Viewfinder | null>(null)
@@ -67,6 +70,7 @@ export const ViewfinderOverlay: React.FC<ViewfinderOverlayProps> = ({
         ...cameraRig.getAllMeshGroups(),
         ...pathSystem.getVisualObjects(),
         ...actorRig.getHelperObjects(),
+        ...lightSystem.getHelperObjects(),
       ]
       return Array.from(new Set(list))
     }
@@ -100,7 +104,7 @@ export const ViewfinderOverlay: React.FC<ViewfinderOverlayProps> = ({
       vf.dispose()
       vfRef.current = null
     }
-  }, [scene, cameraRig, actorRig, pathSystem])
+  }, [scene, cameraRig, actorRig, pathSystem, lightSystem])
 
   return (
     <div className={css.cpVfWindow}>

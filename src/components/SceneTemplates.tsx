@@ -27,6 +27,8 @@ export const SceneTemplates: React.FC = () => {
       template: preset.template,
       objects,
       lighting: usePlannerStore.getState().project.scene.lighting,
+      lights: usePlannerStore.getState().project.scene.lights || [],
+      modifiers: usePlannerStore.getState().project.scene.modifiers || [],
     })
   }
 

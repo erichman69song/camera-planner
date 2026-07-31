@@ -31,6 +31,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({ onExport }) => {
   const showAxes = usePlannerStore(s => s.showAxes)
   const setMode = usePlannerStore(s => s.setMode)
   const setTool = usePlannerStore(s => s.setTool)
+  const setSideTab = usePlannerStore(s => s.setSideTab)
   const toggleGrid = usePlannerStore(s => s.toggleGrid)
   const toggleAxes = usePlannerStore(s => s.toggleAxes)
   const undo = usePlannerStore(s => s.undo)
@@ -38,6 +39,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({ onExport }) => {
   const cameras = usePlannerStore(s => s.project.cameras)
   const actors = usePlannerStore(s => s.project.actors)
   const sceneObjects = usePlannerStore(s => s.project.scene.objects)
+  const stageLights = usePlannerStore(s => s.project.scene.lights || [])
+  const modifiers = usePlannerStore(s => s.project.scene.modifiers || [])
 
   return (
     <header className={css.cpToolbar}>
@@ -54,6 +57,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({ onExport }) => {
         <span>{cameras.length} 机位</span>
         <span>{actors.length} 角色</span>
         <span>{sceneObjects.length} 置景</span>
+        <span>{stageLights.length + modifiers.length} 灯光设备</span>
       </div>
 
       <div className={css.cpToolbarSpacer} />
@@ -85,7 +89,12 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({ onExport }) => {
             type="button"
             key={t.value}
             className={`${css.cpToolbarBtn} ${tool === t.value ? css.active : ''}`}
-            onClick={() => setTool(t.value)}
+            onClick={() => {
+              setTool(t.value)
+              if (t.value === 'camera') setSideTab('cameras')
+              if (t.value === 'object') setSideTab('objects')
+              if (t.value === 'light') setSideTab('lighting')
+            }}
             title={t.label}
             aria-label={t.label}
             aria-pressed={tool === t.value}

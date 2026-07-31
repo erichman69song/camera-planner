@@ -332,7 +332,7 @@
 
 .cpSidebar {
   display: flex;
-  flex: 0 0 276px;
+  flex: 0 0 318px;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
@@ -342,7 +342,7 @@
 
 .cpSidebarTabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   flex: 0 0 auto;
   padding: 8px;
   gap: 5px;
@@ -558,6 +558,188 @@
 .cpPaletteLabel {
   font-size: 10px;
   font-weight: 650;
+}
+
+.cpAssetSectionLabel {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 12px 0 7px;
+  color: #8395a3;
+  border-bottom: 1px solid #2d3b47;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.cpAssetGrid,
+.cpLightingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.cpAssetCard,
+.cpLightingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 78px;
+  gap: 3px;
+  padding: 10px;
+  color: var(--cp-text);
+  background: linear-gradient(145deg, #1b2731 0%, #151e26 100%);
+  border: 1px solid #344553;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+  transition: 120ms ease;
+}
+
+.cpAssetCard:hover,
+.cpLightingCard:hover {
+  background: #243440;
+  border-color: #61778a;
+  transform: translateY(-1px);
+}
+
+.cpAssetCard.active,
+.cpLightingCard.active {
+  background: #12364a;
+  border-color: #4fa9d0;
+  box-shadow: inset 3px 0 0 var(--cp-accent);
+}
+
+.cpAssetCode,
+.cpLightingCode {
+  color: var(--cp-accent);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.cpAssetCard strong,
+.cpLightingCard strong {
+  overflow: hidden;
+  width: 100%;
+  font-size: 11px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpAssetCard small,
+.cpLightingCard small {
+  overflow: hidden;
+  width: 100%;
+  color: var(--cp-text-muted);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpLightingCard {
+  min-height: 74px;
+}
+
+.cpLightingCode {
+  color: var(--cp-camera);
+}
+
+.cpEquipmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cpEquipmentItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 54px;
+  gap: 9px;
+  padding: 8px 9px;
+  color: var(--cp-text);
+  background: #18232c;
+  border: 1px solid #31414e;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cpEquipmentItem:hover {
+  background: #22313d;
+  border-color: #536a7c;
+}
+
+.cpEquipmentItem.selected {
+  background: #49371d;
+  border-color: #a77a31;
+  box-shadow: inset 3px 0 0 var(--cp-camera);
+}
+
+.cpEquipmentItem > i {
+  flex: 0 0 10px;
+  width: 10px;
+  height: 32px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 20%);
+}
+
+.cpEquipmentItem > i.cpModifierSwatch {
+  background: repeating-linear-gradient(
+    135deg,
+    #1b2024 0 4px,
+    #6f7b83 4px 6px
+  );
+}
+
+.cpEquipmentItem > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cpEquipmentItem strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpEquipmentItem small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--cp-text-muted);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpEquipmentItem > b {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  color: #8796a1;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cpEquipmentItem > b:hover {
+  color: #fff;
+  background: #5a2429;
 }
 
 .cpTemplateCard {
@@ -1603,7 +1785,8 @@
 
 .cameraPlanner button:focus-visible,
 .cameraPlanner input:focus-visible,
-.cameraPlanner select:focus-visible {
+.cameraPlanner select:focus-visible,
+.cpEquipmentItem:focus-visible {
   outline: 2px solid var(--cp-accent);
   outline-offset: 2px;
 }
@@ -1665,6 +1848,11 @@
 
   .cpVfWindow {
     width: 248px;
+  }
+
+  .cpAssetGrid,
+  .cpLightingGrid {
+    grid-template-columns: 1fr;
   }
 
   .cpViewportStats,

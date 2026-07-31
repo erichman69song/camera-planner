@@ -17,9 +17,10 @@ import {
   type PickResult,
 } from '../engine'
 import { generateId } from '../engine/calc'
+import { DEFAULT_STAGE_LIGHTS, DEFAULT_LIGHT_MODIFIERS } from '../engine/LightSystem'
 import { usePlannerStore } from '../store/usePlannerStore'
 import { OutputManager } from '../io/OutputManager'
-import { defaultObjectY } from './ObjectPalette'
+import { getObjectDefaults } from './ObjectPalette'
 import { ViewfinderOverlay } from './ViewfinderOverlay'
 import { ContextMenu, ContextMenuAction } from './ContextMenu'
 import css from '../styles.module.css'
@@ -45,7 +46,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
   // - On subsequent picks (pointermove during drag): update position
   // - History is pushed only once, on the first actual movement
   const dragRef = useRef<{
-    type: 'camera' | 'object' | 'actor' | 'path'
+    type: 'camera' | 'object' | 'actor' | 'light' | 'modifier' | 'path'
     id: string
     historyPushed: boolean
   } | null>(null)
@@ -89,6 +90,8 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
     rayPicker.setCameraGroups(cameraRig.getAllMeshGroups())
     rayPicker.setObjectMeshes(objectLib.getAllMeshes())
     rayPicker.setActorGroups(actorRig.getAllMeshGroups())
+    rayPicker.setLightGroups(lightSystem.getLightGroups())
+    rayPicker.setModifierGroups(lightSystem.getModifierGroups())
     rayPicker.setPathGroups(pathSystem.getMarkerGroups())
     rayPicker.enable(scene.getCanvas())
 
@@ -103,6 +106,8 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
         result.target === 'camera' ||
         result.target === 'object' ||
         result.target === 'actor' ||
+        result.target === 'light' ||
+        result.target === 'modifier' ||
         result.target === 'path'
       ) {
         scene.controls.enabled = false
@@ -111,12 +116,14 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
       // Object tool: click ground to place pending palette type
       if (tool === 'object' && state.pendingObjectType && result.target === 'ground' && result.groundPoint) {
         const type = state.pendingObjectType
+        const defaults = getObjectDefaults(type)
         const newObj = {
           id: generateId(),
+          name: defaults.name,
           type,
           position: {
             x: result.groundPoint.x,
-            y: defaultObjectY(type),
+            y: defaults.y,
             z: result.groundPoint.z,
           },
           rotation: {
@@ -125,12 +132,46 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
             roll: 0,
           },
           scale: { x: 1, y: 1, z: 1 },
-          color: 0x888888,
+          color: defaults.color,
         }
         state.addObject(newObj)
         state.selectObject(newObj.id)
         outputManager.emit('object:add', newObj.id)
         return
+      }
+
+      // Light tool: place an active source or a grip modifier.
+      if (tool === 'light' && result.target === 'ground' && result.groundPoint) {
+        if (state.pendingLightType) {
+          const type = state.pendingLightType
+          const count = (state.project.scene.lights || []).filter(light => light.type === type).length + 1
+          const names = { point: '点光源', area: '面光源', line: '线光源' } as const
+          const light = {
+            id: generateId(),
+            name: `${names[type]} ${String(count).padStart(2, '0')}`,
+            position: { x: result.groundPoint.x, y: 2.42, z: result.groundPoint.z },
+            ...structuredClone(DEFAULT_STAGE_LIGHTS[type]),
+          }
+          state.addStageLight(light)
+          state.selectStageLight(light.id)
+          outputManager.emit('scene:change', store.getState().project.scene)
+          return
+        }
+        if (state.pendingModifierType) {
+          const type = state.pendingModifierType
+          const count = (state.project.scene.modifiers || []).filter(item => item.type === type).length + 1
+          const names = { flag: '黑旗', butterfly: '蝶布', blackout: '黑幕' } as const
+          const modifier = {
+            id: generateId(),
+            name: `${names[type]} ${String(count).padStart(2, '0')}`,
+            position: { x: result.groundPoint.x, y: 2.42, z: result.groundPoint.z },
+            ...structuredClone(DEFAULT_LIGHT_MODIFIERS[type]),
+          }
+          state.addLightModifier(modifier)
+          state.selectLightModifier(modifier.id)
+          outputManager.emit('scene:change', store.getState().project.scene)
+          return
+        }
       }
 
       // Path keyframe ghost: select + drag (keeps Y, moves XZ)
@@ -262,6 +303,58 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
             }
           }
         }
+      } else if (result.target === 'light' && result.id) {
+        if (
+          !dragRef.current ||
+          dragRef.current.type !== 'light' ||
+          dragRef.current.id !== result.id
+        ) {
+          dragRef.current = { type: 'light', id: result.id, historyPushed: false }
+          store.getState().selectStageLight(result.id)
+        } else if (result.point) {
+          const light = (store.getState().project.scene.lights || []).find(item => item.id === result.id)
+          if (light) {
+            const position = { x: result.point.x, y: result.point.y, z: result.point.z }
+            const moved =
+              Math.abs(position.x - light.position.x) > 0.01 ||
+              Math.abs(position.y - light.position.y) > 0.01 ||
+              Math.abs(position.z - light.position.z) > 0.01
+            if (moved) {
+              if (!dragRef.current.historyPushed) {
+                store.getState().snapshot()
+                dragRef.current.historyPushed = true
+              }
+              store.getState().updateStageLight(result.id, { position })
+            }
+          }
+        }
+      } else if (result.target === 'modifier' && result.id) {
+        if (
+          !dragRef.current ||
+          dragRef.current.type !== 'modifier' ||
+          dragRef.current.id !== result.id
+        ) {
+          dragRef.current = { type: 'modifier', id: result.id, historyPushed: false }
+          store.getState().selectLightModifier(result.id)
+        } else if (result.point) {
+          const modifier = (store.getState().project.scene.modifiers || []).find(
+            item => item.id === result.id
+          )
+          if (modifier) {
+            const position = { x: result.point.x, y: result.point.y, z: result.point.z }
+            const moved =
+              Math.abs(position.x - modifier.position.x) > 0.01 ||
+              Math.abs(position.y - modifier.position.y) > 0.01 ||
+              Math.abs(position.z - modifier.position.z) > 0.01
+            if (moved) {
+              if (!dragRef.current.historyPushed) {
+                store.getState().snapshot()
+                dragRef.current.historyPushed = true
+              }
+              store.getState().updateLightModifier(result.id, { position })
+            }
+          }
+        }
       } else {
         dragRef.current = null
       }
@@ -297,6 +390,8 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
   const project = store(s => s.project)
   const selectedCameraId = store(s => s.selectedCameraId)
   const selectedActorId = store(s => s.selectedActorId)
+  const selectedLightId = store(s => s.selectedLightId)
+  const selectedModifierId = store(s => s.selectedModifierId)
   const selectedPathPointId = store(s => s.selectedPathPointId)
 
   useEffect(() => {
@@ -369,8 +464,13 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
         if (existing && (
           existing.name !== actor.name ||
           existing.role !== actor.role ||
+          existing.bodyType !== actor.bodyType ||
+          existing.action !== actor.action ||
           existing.height !== actor.height ||
           existing.color !== actor.color ||
+          existing.scale.x !== actor.scale.x ||
+          existing.scale.y !== actor.scale.y ||
+          existing.scale.z !== actor.scale.z ||
           existing.position.x !== actor.position.x ||
           existing.position.y !== actor.position.y ||
           existing.position.z !== actor.position.z ||
@@ -444,7 +544,27 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
 
     // Sync lighting
     engine.lightSystem.update(project.scene.lighting)
-  }, [project.cameras, project.actors, project.path, project.scene.objects, project.scene.lighting, selectedCameraId, selectedActorId, selectedPathPointId])
+    engine.lightSystem.syncEquipment(
+      project.scene.lights || [],
+      project.scene.modifiers || []
+    )
+    engine.lightSystem.setSelection(selectedLightId, selectedModifierId)
+    engine.rayPicker.setLightGroups(engine.lightSystem.getLightGroups())
+    engine.rayPicker.setModifierGroups(engine.lightSystem.getModifierGroups())
+  }, [
+    project.cameras,
+    project.actors,
+    project.path,
+    project.scene.objects,
+    project.scene.lighting,
+    project.scene.lights,
+    project.scene.modifiers,
+    selectedCameraId,
+    selectedActorId,
+    selectedLightId,
+    selectedModifierId,
+    selectedPathPointId,
+  ])
 
   // Sync grid/axes visibility
   const showGrid = store(s => s.showGrid)
@@ -480,6 +600,8 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
   const cameras = store(s => s.project.cameras)
   const actors = store(s => s.project.actors)
   const sceneObjects = store(s => s.project.scene.objects)
+  const stageLights = store(s => s.project.scene.lights || [])
+  const lightModifiers = store(s => s.project.scene.modifiers || [])
   const sceneTemplate = store(s => s.project.scene.template)
   const selectedCamera = cameras.find(camera => camera.id === selectedCameraId) ?? null
   const engine = engineRef.current
@@ -596,6 +718,47 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
       ]
     }
 
+    if (result.target === 'light' && result.id) {
+      const light = (state.project.scene.lights || []).find(item => item.id === result.id)
+      return [
+        {
+          label: `选中灯具 "${light?.name || '灯具'}"`,
+          icon: 'LUX',
+          onClick: () => store.getState().selectStageLight(result.id!),
+        },
+        {
+          label: light?.enabled ? '关闭灯具' : '开启灯具',
+          icon: '◉',
+          onClick: () => store.getState().updateStageLight(result.id!, {
+            enabled: !light?.enabled,
+          }),
+        },
+        {
+          label: '删除灯具',
+          icon: '×',
+          danger: true,
+          onClick: () => store.getState().deleteStageLight(result.id!),
+        },
+      ]
+    }
+
+    if (result.target === 'modifier' && result.id) {
+      const modifier = (state.project.scene.modifiers || []).find(item => item.id === result.id)
+      return [
+        {
+          label: `选中控光设备 "${modifier?.name || '控光设备'}"`,
+          icon: 'GRIP',
+          onClick: () => store.getState().selectLightModifier(result.id!),
+        },
+        {
+          label: '删除控光设备',
+          icon: '×',
+          danger: true,
+          onClick: () => store.getState().deleteLightModifier(result.id!),
+        },
+      ]
+    }
+
     // Ground / empty context
     if (result.target === 'ground' && result.groundPoint) {
       const gp = result.groundPoint
@@ -633,10 +796,13 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
               id: generateId(),
               name: `角色${state.project.actors.length + 1}`,
               role: 'principal' as const,
+              bodyType: 'adult_male' as const,
+              action: 'stand' as const,
               height: 1.75,
               color: 0x6a6a8a,
               position: { x: gp.x, y: 0, z: gp.z },
               rotation: { yaw: 0, pitch: 0, roll: 0 },
+              scale: { x: 1, y: 1, z: 1 },
               keyframes: [],
             }
             store.getState().addActor(newActor)
@@ -669,6 +835,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
           <span>{cameras.length} CAM</span>
           <span>{actors.length} ACT</span>
           <span>{sceneObjects.length} OBJ</span>
+          <span>{stageLights.length + lightModifiers.length} LGT</span>
         </div>
       </div>
       <div
@@ -677,7 +844,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
         style={{
           width: '100%',
           height: '100%',
-          cursor: tool === 'object' ? 'crosshair' : 'default',
+          cursor: tool === 'object' || tool === 'light' ? 'crosshair' : 'default',
         }}
         onContextMenu={handleContextMenu}
       />
@@ -715,6 +882,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
           cameraRig={engine.cameraRig}
           actorRig={engine.actorRig}
           pathSystem={engine.pathSystem}
+          lightSystem={engine.lightSystem}
         />
       )}
       {contextMenu && (

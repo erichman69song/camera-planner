@@ -7,7 +7,15 @@
 
 import * as THREE from 'three'
 
-export type PickTarget = 'camera' | 'object' | 'actor' | 'path' | 'ground' | null
+export type PickTarget =
+  | 'camera'
+  | 'object'
+  | 'actor'
+  | 'light'
+  | 'modifier'
+  | 'path'
+  | 'ground'
+  | null
 
 export interface PickResult {
   target: PickTarget
@@ -28,13 +36,18 @@ export class RayPicker {
   private onDragEndCallback: (() => void) | null = null
 
   private isDragging = false
-  private dragTarget: { type: 'camera' | 'object' | 'actor' | 'path'; id: string } | null = null
+  private dragTarget: {
+    type: 'camera' | 'object' | 'actor' | 'light' | 'modifier' | 'path'
+    id: string
+  } | null = null
   private dragPlane: THREE.Plane
   private dragOffset: THREE.Vector3
 
   private cameraGroups: THREE.Group[] = []
   private objectMeshes: THREE.Object3D[] = []
   private actorGroups: THREE.Group[] = []
+  private lightGroups: THREE.Group[] = []
+  private modifierGroups: THREE.Group[] = []
   private pathGroups: THREE.Group[] = []
 
   constructor(camera: THREE.Camera, scene: THREE.Scene) {
@@ -57,6 +70,14 @@ export class RayPicker {
 
   setActorGroups(groups: THREE.Group[]): void {
     this.actorGroups = groups
+  }
+
+  setLightGroups(groups: THREE.Group[]): void {
+    this.lightGroups = groups
+  }
+
+  setModifierGroups(groups: THREE.Group[]): void {
+    this.modifierGroups = groups
   }
 
   setPathGroups(groups: THREE.Group[]): void {
@@ -103,6 +124,8 @@ export class RayPicker {
       result.target === 'camera' ||
       result.target === 'object' ||
       result.target === 'actor' ||
+      result.target === 'light' ||
+      result.target === 'modifier' ||
       result.target === 'path'
     ) {
       this.isDragging = true
@@ -203,6 +226,16 @@ export class RayPicker {
         if (child instanceof THREE.Mesh) allMeshes.push(child)
       })
     }
+    for (const group of this.lightGroups) {
+      group.traverse(child => {
+        if (child instanceof THREE.Mesh) allMeshes.push(child)
+      })
+    }
+    for (const group of this.modifierGroups) {
+      group.traverse(child => {
+        if (child instanceof THREE.Mesh) allMeshes.push(child)
+      })
+    }
 
     const intersects = this.raycaster.intersectObjects(allMeshes, false)
 
@@ -244,6 +277,22 @@ export class RayPicker {
           groundPoint,
         }
       }
+      if (userData.lightId) {
+        return {
+          target: 'light',
+          id: userData.lightId,
+          point: hit.point.clone(),
+          groundPoint,
+        }
+      }
+      if (userData.modifierId) {
+        return {
+          target: 'modifier',
+          id: userData.modifierId,
+          point: hit.point.clone(),
+          groundPoint,
+        }
+      }
     }
 
     const groundPoint = new THREE.Vector3()
@@ -261,7 +310,7 @@ export class RayPicker {
   }
 
   private getWorldPosition(
-    type: 'camera' | 'object' | 'actor' | 'path',
+    type: 'camera' | 'object' | 'actor' | 'light' | 'modifier' | 'path',
     id: string
   ): THREE.Vector3 | null {
     if (type === 'camera') {
@@ -274,6 +323,14 @@ export class RayPicker {
     }
     if (type === 'path') {
       const group = this.pathGroups.find(g => g.userData.pathPointId === id)
+      return group ? group.position.clone() : null
+    }
+    if (type === 'light') {
+      const group = this.lightGroups.find(item => item.userData.lightId === id)
+      return group ? group.position.clone() : null
+    }
+    if (type === 'modifier') {
+      const group = this.modifierGroups.find(item => item.userData.modifierId === id)
       return group ? group.position.clone() : null
     }
     const mesh = this.objectMeshes.find(m => m.userData.objectId === id)

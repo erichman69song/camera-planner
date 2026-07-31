@@ -36,6 +36,8 @@ export type {
   Camera, Position3D, Rotation3D, SensorPreset, DOFResult,
   MovementConfig, MovementType, ScriptBinding,
   SceneConfig, SceneObject, ObjectType, LightingConfig, SceneTemplate,
+  StageLight, StageLightType, LightModifier, LightModifierType,
+  Actor, ActorKeyframe, ActorRole, ActorAction, ActorBodyType,
   ProjectData, PathPoint, StoryboardConfig, StoryboardCell,
   TimelineConfig, TimelineKeyframe,
   PlannerEventMap, PlannerEvent, EventHandler,

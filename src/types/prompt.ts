@@ -26,11 +26,35 @@ export interface JsonSceneBlock {
   }
   objects: Array<{
     id: string
+    name?: string
     type: string
     position: { x: number; y: number; z: number }
     rotation: { yaw: number; pitch: number; roll: number }
     scale: { x: number; y: number; z: number }
     color: number
+  }>
+  lights: Array<{
+    id: string
+    name: string
+    type: string
+    position: { x: number; y: number; z: number }
+    rotation: { yaw: number; pitch: number; roll: number }
+    scale: { x: number; y: number; z: number }
+    color: number
+    intensity: number
+    distance: number
+    enabled: boolean
+  }>
+  modifiers: Array<{
+    id: string
+    name: string
+    type: string
+    position: { x: number; y: number; z: number }
+    rotation: { yaw: number; pitch: number; roll: number }
+    scale: { x: number; y: number; z: number }
+    transmission: number
+    diffusion: number
+    enabled: boolean
   }>
 }
 
@@ -63,6 +87,9 @@ export interface JsonActorBlock {
   id: string
   name: string
   role: string
+  bodyType: string
+  action: string
+  scale: { x: number; y: number; z: number }
   height: number
   keyframes: Array<{
     time: number         // seconds

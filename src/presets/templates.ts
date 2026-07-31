@@ -41,10 +41,11 @@ export const SCENE_PRESETS: ScenePreset[] = [
     icon: '🛋️',
     objects: [
       obj('plane', 0, 0, 0, 12, 1, 10, 0x8B7355),         // floor
-      obj('box', 0, 0.4, -4, 4, 0.8, 1, 0x654321),        // sofa
-      obj('box', 0, 0.25, 0, 2, 0.5, 1.2, 0x4a3728),      // coffee table
-      obj('box', -5, 1, -4.5, 0.3, 2, 3, 0x555555),       // bookshelf
-      obj('box', 5, 0.5, -4.5, 2, 1, 0.5, 0x333333),      // TV stand
+      obj('wall', 0, 0, -4.8, 3, 1, 1, 0x8a8c8b),
+      obj('sofa', 0, 0, -3.9, 1.35, 1, 1, 0x536d7a),
+      obj('table', 0, 0, -2, 0.9, 0.7, 0.9, 0x70513d),
+      obj('bookshelf', -4.4, 0, -4.5, 0.9, 1, 0.9, 0x6b4f3c),
+      obj('window', 3.8, 0, -4.68, 1.15, 1.1, 1, 0x68767e),
     ],
   },
   {
@@ -68,11 +69,12 @@ export const SCENE_PRESETS: ScenePreset[] = [
     icon: '☕',
     objects: [
       obj('plane', 0, 0, 0, 10, 1, 8, 0x8B7355),
-      obj('cylinder', -2, 0.35, -1, 0.4, 0.7, 0.4, 0x8B4513),  // table
-      obj('cylinder', 2, 0.35, -1, 0.4, 0.7, 0.4, 0x8B4513),   // table
-      obj('cylinder', 0, 0.35, 2, 0.5, 0.7, 0.5, 0x8B4513),    // round table
-      obj('box', -4, 1, -3.5, 2, 2, 0.5, 0x654321),            // bar counter
-      obj('box', 4, 1.2, -3.5, 0.3, 2.4, 2, 0x444444),         // shelf
+      obj('table', -2, 0, -1, 0.65, 0.8, 0.65, 0x8B4513),
+      obj('chair', -2, 0, 0.1, 1, 1, 1, 0x6b4d38),
+      obj('table', 2, 0, -1, 0.65, 0.8, 0.65, 0x8B4513),
+      obj('chair', 2, 0, 0.1, 1, 1, 1, 0x6b4d38),
+      obj('table', 0, 0, 2, 0.8, 0.8, 0.8, 0x8B4513),
+      obj('bookshelf', 4, 0, -3.5, 0.85, 1, 0.85, 0x654321),
     ],
   },
   {

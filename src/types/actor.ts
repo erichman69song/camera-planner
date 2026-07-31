@@ -24,6 +24,11 @@ export type ActorAction =
   | 'gesture'  // 手势
   | 'leave'    // 离场
 
+export type ActorBodyType =
+  | 'adult_male'
+  | 'adult_female'
+  | 'child'
+
 /** 角色运动关键帧 */
 export interface ActorKeyframe {
   id: string
@@ -38,8 +43,11 @@ export interface Actor {
   id: string
   name: string
   role: ActorRole
+  bodyType: ActorBodyType
+  action: ActorAction
   position: Position3D     // 当前/初始位置
   rotation: Rotation3D     // 当前/初始朝向
+  scale: Position3D        // 自由调整人物宽度/高度/厚度
   height: number           // 米
   color: number            // hex
   keyframes: ActorKeyframe[]  // 运动轨迹关键帧

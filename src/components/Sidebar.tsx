@@ -8,12 +8,14 @@ import { CameraList } from './CameraList'
 import { ObjectPalette } from './ObjectPalette'
 import { SceneTemplates } from './SceneTemplates'
 import { ActorPanel } from './ActorPanel'
+import { LightingPanel } from './LightingPanel'
 import css from '../styles.module.css'
 
 const TABS: { value: SideTab; label: string; icon: string }[] = [
   { value: 'cameras', label: '机位', icon: 'CAM' },
   { value: 'characters', label: '角色', icon: 'ACT' },
   { value: 'objects', label: '置景', icon: 'OBJ' },
+  { value: 'lighting', label: '灯光', icon: 'LGT' },
   { value: 'templates', label: '场景', icon: 'SET' },
 ]
 
@@ -50,6 +52,7 @@ export const Sidebar: React.FC = () => {
         {sideTab === 'objects' && <ObjectPalette />}
         {sideTab === 'templates' && <SceneTemplates />}
         {sideTab === 'characters' && <ActorPanel />}
+        {sideTab === 'lighting' && <LightingPanel />}
       </div>
     </div>
   )

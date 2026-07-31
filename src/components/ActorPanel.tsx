@@ -11,7 +11,7 @@
 import React from 'react'
 import { usePlannerStore } from '../store/usePlannerStore'
 import { generateId, sampleActorAtTime } from '../engine/calc'
-import { Actor, ActorRole, ActorAction } from '../types/actor'
+import { Actor, ActorRole, ActorAction, ActorBodyType } from '../types/actor'
 import css from '../styles.module.css'
 
 const ROLE_LABELS: Record<ActorRole, string> = {
@@ -28,6 +28,12 @@ const ACTION_LABELS: Record<ActorAction, string> = {
   turn: '转身',
   gesture: '手势',
   leave: '离场',
+}
+
+const BODY_LABELS: Record<ActorBodyType, string> = {
+  adult_male: '成年男性',
+  adult_female: '成年女性',
+  child: '儿童',
 }
 
 const ACTOR_COLORS = [0x4ecdc4, 0xff6b35, 0x9b59b6, 0x2ecc71, 0xe74c3c, 0xf39c12]
@@ -52,8 +58,11 @@ export const ActorPanel: React.FC = () => {
       id: generateId(),
       name: `角色${actors.length + 1}`,
       role: 'principal',
+      bodyType: 'adult_male',
+      action: 'stand',
       position: { x: Math.random() * 4 - 2, y: 0, z: Math.random() * 4 - 2 },
       rotation: { yaw: 0, pitch: 0, roll: 0 },
+      scale: { x: 1, y: 1, z: 1 },
       height: 1.7,
       color: ACTOR_COLORS[colorIdx],
       keyframes: [],
@@ -99,7 +108,7 @@ export const ActorPanel: React.FC = () => {
             <div className={css.cpCameraInfo}>
               <div className={css.cpCameraName}>{actor.name}</div>
               <div className={css.cpCameraMeta}>
-                {ROLE_LABELS[actor.role]} · {actor.height}m · {actor.keyframes.length}关键帧
+                {ACTION_LABELS[actor.action]} · {actor.height}m · {actor.keyframes.length}关键帧
               </div>
             </div>
             <button
@@ -132,6 +141,30 @@ export const ActorPanel: React.FC = () => {
             >
               {Object.entries(ROLE_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </div>
+          <div className={css.cpPropsSection}>
+            <label className={css.cpLabel}>人物模型</label>
+            <select
+              className={css.cpSelect}
+              value={selectedActor.bodyType}
+              onChange={e => updateActor(selectedActor.id, { bodyType: e.target.value as ActorBodyType })}
+            >
+              {Object.entries(BODY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={css.cpPropsSection}>
+            <label className={css.cpLabel}>当前动作模型</label>
+            <select
+              className={css.cpSelect}
+              value={selectedActor.action}
+              onChange={e => updateActor(selectedActor.id, { action: e.target.value as ActorAction })}
+            >
+              {Object.entries(ACTION_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>

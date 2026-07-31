@@ -9,14 +9,23 @@
 import { create } from 'zustand'
 import { Camera, MovementConfig, Position3D, Rotation3D } from '../types/camera'
 import { Actor, ActorKeyframe } from '../types/actor'
-import { SceneConfig, SceneObject, LightingConfig, ObjectType } from '../types/scene'
+import {
+  SceneConfig,
+  SceneObject,
+  LightingConfig,
+  ObjectType,
+  StageLight,
+  StageLightType,
+  LightModifier,
+  LightModifierType,
+} from '../types/scene'
 import { ProjectData, PathPoint, StoryboardConfig, TimelineConfig } from '../types/project'
-import { createEmptyProject } from '../types/project'
+import { createEmptyProject, PROJECT_SCHEMA_VERSION } from '../types/project'
 import { calcFOV, calcDOF, generateId } from '../engine/calc'
 
 export type EditorMode = 'select' | 'place' | 'move' | 'rotate'
 export type ToolMode = 'camera' | 'object' | 'light' | 'path'
-export type SideTab = 'cameras' | 'objects' | 'templates' | 'characters'
+export type SideTab = 'cameras' | 'objects' | 'templates' | 'characters' | 'lighting'
 export type BottomTab = 'timeline' | 'storyboard' | 'keyframes'
 
 export interface PlannerState {
@@ -31,9 +40,13 @@ export interface PlannerState {
   selectedCameraId: string | null
   selectedObjectId: string | null
   selectedActorId: string | null
+  selectedLightId: string | null
+  selectedModifierId: string | null
   selectedPathPointId: string | null
   /** Selected palette type; next ground click places it (tool=object) */
   pendingObjectType: ObjectType | null
+  pendingLightType: StageLightType | null
+  pendingModifierType: LightModifierType | null
 
   // UI state
   showGrid: boolean
@@ -58,6 +71,18 @@ export interface PlannerState {
   // --- Scene actions ---
   setSceneConfig: (config: Partial<SceneConfig>) => void
   setLighting: (config: Partial<LightingConfig>) => void
+
+  // --- Practical light / grip actions ---
+  addStageLight: (light: StageLight) => void
+  updateStageLight: (id: string, params: Partial<StageLight>) => void
+  deleteStageLight: (id: string) => void
+  selectStageLight: (id: string | null) => void
+  setPendingLightType: (type: StageLightType | null) => void
+  addLightModifier: (modifier: LightModifier) => void
+  updateLightModifier: (id: string, params: Partial<LightModifier>) => void
+  deleteLightModifier: (id: string) => void
+  selectLightModifier: (id: string | null) => void
+  setPendingModifierType: (type: LightModifierType | null) => void
 
   // --- Actor actions ---
   addActor: (actor: Actor) => void
@@ -120,8 +145,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   selectedCameraId: null,
   selectedObjectId: null,
   selectedActorId: null,
+  selectedLightId: null,
+  selectedModifierId: null,
   selectedPathPointId: null,
   pendingObjectType: null,
+  pendingLightType: null,
+  pendingModifierType: null,
   showGrid: true,
   showAxes: true,
   showFovCones: true,
@@ -187,6 +216,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     selectedCameraId: id,
     selectedObjectId: null,
     selectedActorId: null,
+    selectedLightId: null,
+    selectedModifierId: null,
     selectedPathPointId: null,
   }),
 
@@ -249,6 +280,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     selectedObjectId: id,
     selectedCameraId: null,
     selectedActorId: null,
+    selectedLightId: null,
+    selectedModifierId: null,
     selectedPathPointId: null,
   }),
   setPendingObjectType: (type) => set({ pendingObjectType: type }),
@@ -271,11 +304,125 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     },
   })),
 
+  // --- Practical light / grip actions ---
+  addStageLight: (light) => set((s) => {
+    pushHistory(s.project)
+    return {
+      project: {
+        ...s.project,
+        scene: {
+          ...s.project.scene,
+          lights: [...(s.project.scene.lights || []), light],
+        },
+      },
+    }
+  }),
+
+  updateStageLight: (id, params) => set((s) => ({
+    project: {
+      ...s.project,
+      scene: {
+        ...s.project.scene,
+        lights: (s.project.scene.lights || []).map(light =>
+          light.id === id ? { ...light, ...params } : light
+        ),
+      },
+    },
+  })),
+
+  deleteStageLight: (id) => set((s) => {
+    pushHistory(s.project)
+    return {
+      project: {
+        ...s.project,
+        scene: {
+          ...s.project.scene,
+          lights: (s.project.scene.lights || []).filter(light => light.id !== id),
+        },
+      },
+      selectedLightId: s.selectedLightId === id ? null : s.selectedLightId,
+    }
+  }),
+
+  selectStageLight: (id) => set({
+    selectedLightId: id,
+    selectedModifierId: null,
+    selectedCameraId: null,
+    selectedObjectId: null,
+    selectedActorId: null,
+    selectedPathPointId: null,
+  }),
+
+  setPendingLightType: (type) => set({
+    pendingLightType: type,
+    pendingModifierType: null,
+  }),
+
+  addLightModifier: (modifier) => set((s) => {
+    pushHistory(s.project)
+    return {
+      project: {
+        ...s.project,
+        scene: {
+          ...s.project.scene,
+          modifiers: [...(s.project.scene.modifiers || []), modifier],
+        },
+      },
+    }
+  }),
+
+  updateLightModifier: (id, params) => set((s) => ({
+    project: {
+      ...s.project,
+      scene: {
+        ...s.project.scene,
+        modifiers: (s.project.scene.modifiers || []).map(modifier =>
+          modifier.id === id ? { ...modifier, ...params } : modifier
+        ),
+      },
+    },
+  })),
+
+  deleteLightModifier: (id) => set((s) => {
+    pushHistory(s.project)
+    return {
+      project: {
+        ...s.project,
+        scene: {
+          ...s.project.scene,
+          modifiers: (s.project.scene.modifiers || []).filter(modifier => modifier.id !== id),
+        },
+      },
+      selectedModifierId: s.selectedModifierId === id ? null : s.selectedModifierId,
+    }
+  }),
+
+  selectLightModifier: (id) => set({
+    selectedModifierId: id,
+    selectedLightId: null,
+    selectedCameraId: null,
+    selectedObjectId: null,
+    selectedActorId: null,
+    selectedPathPointId: null,
+  }),
+
+  setPendingModifierType: (type) => set({
+    pendingModifierType: type,
+    pendingLightType: null,
+  }),
+
   // --- Actor actions ---
   addActor: (actor) => set((s) => {
     pushHistory(s.project)
+    const normalized: Actor = {
+      ...actor,
+      bodyType: actor.bodyType || 'adult_male',
+      action: actor.action || actor.keyframes?.[0]?.action || 'stand',
+      scale: actor.scale || { x: 1, y: 1, z: 1 },
+      keyframes: actor.keyframes || [],
+    }
     return {
-      project: { ...s.project, actors: [...s.project.actors, actor] },
+      project: { ...s.project, actors: [...s.project.actors, normalized] },
     }
   }),
 
@@ -304,6 +451,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     selectedActorId: id,
     selectedCameraId: null,
     selectedObjectId: null,
+    selectedLightId: null,
+    selectedModifierId: null,
     selectedPathPointId: null,
   }),
 
@@ -400,6 +549,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   selectPathPoint: (id) => set({
     selectedPathPointId: id,
     selectedObjectId: null,
+    selectedLightId: null,
+    selectedModifierId: null,
   }),
 
   recordKeyframe: () => {
@@ -416,7 +567,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         time: currentTime,
         position: { ...actor.position },
         rotation: { ...actor.rotation },
-        action: 'stand',
+        action: actor.action,
       })
       set({ bottomTab: 'keyframes' })
       return { ok: true, message: `已记录角色关键帧 @ ${currentTime.toFixed(1)}s` }
@@ -491,10 +642,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   loadProject: (data) => {
     clearHistory()
     set({
-      project: structuredClone(data),
+      project: normalizeProject(data),
       selectedCameraId: null,
       selectedObjectId: null,
       selectedActorId: null,
+      selectedLightId: null,
+      selectedModifierId: null,
       selectedPathPointId: null,
     })
   },
@@ -527,4 +680,20 @@ function pushHistory(project: ProjectData): void {
 function clearHistory(): void {
   historyStack.length = 0
   redoStack.length = 0
+}
+
+/** Backward-compatible migration for v4.0 projects and embedded demo data. */
+function normalizeProject(data: ProjectData): ProjectData {
+  const project = structuredClone(data)
+  project.version = PROJECT_SCHEMA_VERSION
+  project.scene.lights = project.scene.lights || []
+  project.scene.modifiers = project.scene.modifiers || []
+  project.actors = (project.actors || []).map(actor => ({
+    ...actor,
+    bodyType: actor.bodyType || 'adult_male',
+    action: actor.action || actor.keyframes?.[0]?.action || 'stand',
+    scale: actor.scale || { x: 1, y: 1, z: 1 },
+    keyframes: actor.keyframes || [],
+  }))
+  return project
 }

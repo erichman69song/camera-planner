@@ -5,7 +5,7 @@ import { Actor } from './actor'
 import { SceneConfig, SceneObject } from './scene'
 
 /** Current serialized project schema version. */
-export const PROJECT_SCHEMA_VERSION = '4.0'
+export const PROJECT_SCHEMA_VERSION = '4.1'
 
 export interface ProjectData {
   version: string
@@ -66,6 +66,8 @@ export function createEmptyProject(): ProjectData {
         color: 0xffffff,
         preset: 'daylight',
       },
+      lights: [],
+      modifiers: [],
     },
     path: [],
     storyboard: {
