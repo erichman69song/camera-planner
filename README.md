@@ -2,6 +2,9 @@
 
 3D 机位规划组件，为 Muraguchi AI 影视创作平台构建。纯前端 npm 包，数据由 Muraguchi 主项目后端管理。
 
+- 当前 npm 包版本：`0.4.0`
+- 当前项目数据 Schema：`4.0`
+
 ## 快速开始
 
 ```bash
@@ -207,6 +210,11 @@ npx tsx src/engine/__tests__/calc.test.ts  # 运行单元测试
 | 测试 | tsx + 自定义 runner |
 
 ## CHANGELOG
+
+### v0.4.0 (2026-07-29)
+
+- 统一 npm 包版本与 v4 项目数据 Schema 说明
+- 开始稳定化工程：项目历史隔离、拖拽写回与关联数据清理
 
 ### v0.2.0 (2026-07-03)
 

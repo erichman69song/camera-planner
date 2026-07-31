@@ -40,7 +40,7 @@ export type {
   TimelineConfig, TimelineKeyframe,
   PlannerEventMap, PlannerEvent, EventHandler,
 } from './types'
-export { createEmptyProject } from './types'
+export { createEmptyProject, PROJECT_SCHEMA_VERSION } from './types'
 
 // Styles
 

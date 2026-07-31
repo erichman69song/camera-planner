@@ -25,6 +25,7 @@ export class RayPicker {
 
   private onPickCallback: ((result: PickResult) => void) | null = null
   private onHoverCallback: ((result: PickResult | null) => void) | null = null
+  private onDragEndCallback: (() => void) | null = null
 
   private isDragging = false
   private dragTarget: { type: 'camera' | 'object' | 'actor' | 'path'; id: string } | null = null
@@ -66,12 +67,14 @@ export class RayPicker {
     canvas.addEventListener('pointerdown', this.onPointerDown)
     canvas.addEventListener('pointermove', this.onPointerMove)
     canvas.addEventListener('pointerup', this.onPointerUp)
+    canvas.addEventListener('pointercancel', this.onPointerUp)
   }
 
   disable(canvas: HTMLElement): void {
     canvas.removeEventListener('pointerdown', this.onPointerDown)
     canvas.removeEventListener('pointermove', this.onPointerMove)
     canvas.removeEventListener('pointerup', this.onPointerUp)
+    canvas.removeEventListener('pointercancel', this.onPointerUp)
   }
 
   onPick(callback: (result: PickResult) => void): void {
@@ -80,6 +83,10 @@ export class RayPicker {
 
   onHover(callback: (result: PickResult | null) => void): void {
     this.onHoverCallback = callback
+  }
+
+  onDragEnd(callback: () => void): void {
+    this.onDragEndCallback = callback
   }
 
   /** Public helper to perform a raycast at a specific mouse/pointer event */
@@ -103,6 +110,8 @@ export class RayPicker {
         type: result.target,
         id: result.id!,
       }
+      const pointerTarget = event.currentTarget as HTMLElement
+      pointerTarget.setPointerCapture?.(event.pointerId)
 
       const worldPos = this.getWorldPosition(result.target, result.id!)
       if (worldPos) {
@@ -143,9 +152,17 @@ export class RayPicker {
     }
   }
 
-  private onPointerUp = (_event: PointerEvent): void => {
+  private onPointerUp = (event: PointerEvent): void => {
+    const wasDragging = this.isDragging
     this.isDragging = false
     this.dragTarget = null
+    const target = event.currentTarget as HTMLElement
+    if (target.hasPointerCapture?.(event.pointerId)) {
+      target.releasePointerCapture(event.pointerId)
+    }
+    if (wasDragging) {
+      this.onDragEndCallback?.()
+    }
   }
 
   private updateMouse(event: PointerEvent): void {

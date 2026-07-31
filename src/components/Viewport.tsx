@@ -44,7 +44,11 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
   // - On first pick (pointerdown): just select, set dragRef
   // - On subsequent picks (pointermove during drag): update position
   // - History is pushed only once, on the first actual movement
-  const dragRef = useRef<{ id: string; historyPushed: boolean } | null>(null)
+  const dragRef = useRef<{
+    type: 'camera' | 'object' | 'actor' | 'path'
+    id: string
+    historyPushed: boolean
+  } | null>(null)
   const [engineReady, setEngineReady] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     x: number
@@ -87,6 +91,14 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
     rayPicker.onPick((result) => {
       const state = store.getState()
       const tool = state.tool
+      if (
+        result.target === 'camera' ||
+        result.target === 'object' ||
+        result.target === 'actor' ||
+        result.target === 'path'
+      ) {
+        scene.controls.enabled = false
+      }
 
       // Object tool: click ground to place pending palette type
       if (tool === 'object' && state.pendingObjectType && result.target === 'ground' && result.groundPoint) {
@@ -115,8 +127,12 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
 
       // Path keyframe ghost: select + drag (keeps Y, moves XZ)
       if (result.target === 'path' && result.id) {
-        if (!dragRef.current || dragRef.current.id !== result.id) {
-          dragRef.current = { id: result.id, historyPushed: false }
+        if (
+          !dragRef.current ||
+          dragRef.current.type !== 'path' ||
+          dragRef.current.id !== result.id
+        ) {
+          dragRef.current = { type: 'path', id: result.id, historyPushed: false }
           store.getState().selectPathPoint(result.id)
           store.getState().setBottomTab('keyframes')
         } else if (result.point) {
@@ -150,13 +166,73 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
 
       // Normal selection / drag mode
       if (result.target === 'camera' && result.id) {
-        store.getState().selectCamera(result.id)
-        outputManager.emit('camera:select', result.id)
+        if (
+          !dragRef.current ||
+          dragRef.current.type !== 'camera' ||
+          dragRef.current.id !== result.id
+        ) {
+          dragRef.current = { type: 'camera', id: result.id, historyPushed: false }
+          store.getState().selectCamera(result.id)
+          outputManager.emit('camera:select', result.id)
+        } else if (result.point) {
+          const camera = store.getState().project.cameras.find(c => c.id === result.id)
+          if (camera) {
+            const position = {
+              x: result.point.x,
+              y: result.point.y,
+              z: result.point.z,
+            }
+            const moved =
+              Math.abs(position.x - camera.position.x) > 0.01 ||
+              Math.abs(position.y - camera.position.y) > 0.01 ||
+              Math.abs(position.z - camera.position.z) > 0.01
+            if (moved) {
+              if (!dragRef.current.historyPushed) {
+                store.getState().snapshot()
+                dragRef.current.historyPushed = true
+              }
+              store.getState().setCameraTransform(result.id, position, camera.rotation)
+              outputManager.emit('camera:change', { ...camera, position })
+            }
+          }
+        }
       } else if (result.target === 'object' && result.id) {
-        store.getState().selectObject(result.id)
+        if (
+          !dragRef.current ||
+          dragRef.current.type !== 'object' ||
+          dragRef.current.id !== result.id
+        ) {
+          dragRef.current = { type: 'object', id: result.id, historyPushed: false }
+          store.getState().selectObject(result.id)
+        } else if (result.point) {
+          const object = store.getState().project.scene.objects.find(o => o.id === result.id)
+          if (object) {
+            const position = {
+              x: result.point.x,
+              y: result.point.y,
+              z: result.point.z,
+            }
+            const moved =
+              Math.abs(position.x - object.position.x) > 0.01 ||
+              Math.abs(position.y - object.position.y) > 0.01 ||
+              Math.abs(position.z - object.position.z) > 0.01
+            if (moved) {
+              if (!dragRef.current.historyPushed) {
+                store.getState().snapshot()
+                dragRef.current.historyPushed = true
+              }
+              store.getState().updateObject(result.id, { position })
+              outputManager.emit('scene:change', store.getState().project.scene)
+            }
+          }
+        }
       } else if (result.target === 'actor' && result.id) {
-        if (!dragRef.current || dragRef.current.id !== result.id) {
-          dragRef.current = { id: result.id, historyPushed: false }
+        if (
+          !dragRef.current ||
+          dragRef.current.type !== 'actor' ||
+          dragRef.current.id !== result.id
+        ) {
+          dragRef.current = { type: 'actor', id: result.id, historyPushed: false }
           store.getState().selectActor(result.id)
         } else {
           if (result.groundPoint) {
@@ -183,6 +259,11 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
       }
     })
 
+    rayPicker.onDragEnd(() => {
+      dragRef.current = null
+      scene.controls.enabled = true
+    })
+
     scene.start()
 
     engineRef.current = {
@@ -198,6 +279,7 @@ export const Viewport: React.FC<ViewportProps> = ({ outputManager }) => {
 
     return () => {
       setEngineReady(false)
+      rayPicker.disable(scene.getCanvas())
       scene.dispose()
       engineRef.current = null
     }

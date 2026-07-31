@@ -12,15 +12,18 @@ let passed = 0
 let failed = 0
 
 function test(name: string, fn: () => void) {
-  // Reset store before each test
+  // Reset project and module-level history before each test
+  usePlannerStore.getState().loadProject(createEmptyProject())
   usePlannerStore.setState({
-    project: createEmptyProject(),
     mode: 'select',
     tool: 'camera',
     sideTab: 'cameras',
     bottomTab: 'timeline',
     selectedCameraId: null,
     selectedObjectId: null,
+    selectedActorId: null,
+    selectedPathPointId: null,
+    pendingObjectType: null,
     showGrid: true,
     showAxes: true,
     showFovCones: true,
@@ -115,6 +118,47 @@ test('deleteCamera clears selection if deleted was selected', () => {
   assertTrue(usePlannerStore.getState().selectedCameraId === cam.id)
   usePlannerStore.getState().deleteCamera(cam.id)
   assertEqual(usePlannerStore.getState().selectedCameraId, null)
+})
+
+test('deleteCamera clears associated paths, storyboard cells and timeline keyframes', () => {
+  const cam = makeCamera()
+  usePlannerStore.getState().addCamera(cam)
+  const project = usePlannerStore.getState().getProjectData()
+  usePlannerStore.getState().loadProject({
+    ...project,
+    path: [{
+      id: 'path-1',
+      cameraId: cam.id,
+      position: { x: 0, y: 1.6, z: 0 },
+      rotation: { yaw: 0, pitch: 0, roll: 0 },
+      t: 0,
+    }],
+    storyboard: {
+      grid: '3x3',
+      cells: [{ index: 0, cameraId: cam.id, label: 'Shot 1' }],
+    },
+    timeline: {
+      ...project.timeline,
+      keyframes: [{
+        id: 'timeline-1',
+        time: 0,
+        cameraId: cam.id,
+        type: 'position',
+        value: { x: 0, y: 1.6, z: 0 },
+      }],
+    },
+  })
+  usePlannerStore.getState().selectCamera(cam.id)
+  usePlannerStore.getState().selectPathPoint('path-1')
+
+  usePlannerStore.getState().deleteCamera(cam.id)
+
+  const next = usePlannerStore.getState()
+  assertEqual(next.project.path.length, 0)
+  assertEqual(next.project.storyboard.cells[0].cameraId, undefined)
+  assertEqual(next.project.storyboard.cells[0].label, 'Shot 1')
+  assertEqual(next.project.timeline.keyframes.length, 0)
+  assertEqual(next.selectedPathPointId, null)
 })
 
 test('selectCamera sets selectedCameraId', () => {
@@ -242,6 +286,48 @@ test('multiple undo/redo cycle', () => {
   assertEqual(usePlannerStore.getState().project.cameras.length, 2)
   usePlannerStore.getState().redo() // restore 3
   assertEqual(usePlannerStore.getState().project.cameras.length, 3)
+})
+
+test('loadProject clears undo and redo history', () => {
+  usePlannerStore.getState().addCamera(makeCamera({ name: 'OLD' }))
+  const loaded = createEmptyProject()
+  loaded.cameras = [makeCamera({ name: 'LOADED' })]
+
+  usePlannerStore.getState().loadProject(loaded)
+  usePlannerStore.getState().undo()
+
+  assertEqual(usePlannerStore.getState().project.cameras.length, 1)
+  assertEqual(usePlannerStore.getState().project.cameras[0].name, 'LOADED')
+})
+
+test('single snapshot groups repeated camera transforms into one undo step', () => {
+  const cam = makeCamera()
+  usePlannerStore.getState().addCamera(cam)
+  usePlannerStore.getState().snapshot()
+  usePlannerStore.getState().setCameraTransform(
+    cam.id,
+    { x: 1, y: 1.6, z: 1 },
+    cam.rotation
+  )
+  usePlannerStore.getState().setCameraTransform(
+    cam.id,
+    { x: 2, y: 1.6, z: 2 },
+    cam.rotation
+  )
+
+  usePlannerStore.getState().undo()
+  assertEqual(usePlannerStore.getState().project.cameras[0].position, cam.position)
+})
+
+test('single snapshot groups repeated object transforms into one undo step', () => {
+  const obj = makeObject()
+  usePlannerStore.getState().addObject(obj)
+  usePlannerStore.getState().snapshot()
+  usePlannerStore.getState().updateObject(obj.id, { position: { x: 1, y: 0, z: 1 } })
+  usePlannerStore.getState().updateObject(obj.id, { position: { x: 2, y: 0, z: 2 } })
+
+  usePlannerStore.getState().undo()
+  assertEqual(usePlannerStore.getState().project.scene.objects[0].position, obj.position)
 })
 
 // ============================================================

@@ -2,6 +2,6 @@ export type { Camera, Position3D, Rotation3D, SensorPreset, DOFResult, MovementC
 export type { SceneConfig, SceneObject, ObjectType, LightingConfig, SceneTemplate } from './scene'
 export type { ProjectData, PathPoint, StoryboardConfig, StoryboardCell, TimelineConfig, TimelineKeyframe } from './project'
 export type { PlannerEventMap, PlannerEvent, EventHandler } from './events'
-export { createEmptyProject } from './project'
+export { createEmptyProject, PROJECT_SCHEMA_VERSION } from './project'
 export type { Actor, ActorKeyframe, ActorRole, ActorAction } from './actor'
 export type { JsonPrompt, JsonSceneBlock, JsonCameraBlock, JsonActorBlock, JsonTimelineBlock } from './prompt'

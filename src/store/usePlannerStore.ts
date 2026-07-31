@@ -156,12 +156,30 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
 
   deleteCamera: (id) => set((s) => {
     pushHistory(s.project)
+    const deletedPathIds = new Set(
+      s.project.path.filter(point => point.cameraId === id).map(point => point.id)
+    )
     return {
       project: {
         ...s.project,
         cameras: s.project.cameras.filter(c => c.id !== id),
+        path: s.project.path.filter(point => point.cameraId !== id),
+        storyboard: {
+          ...s.project.storyboard,
+          cells: s.project.storyboard.cells.map(cell =>
+            cell.cameraId === id ? { ...cell, cameraId: undefined } : cell
+          ),
+        },
+        timeline: {
+          ...s.project.timeline,
+          keyframes: s.project.timeline.keyframes.filter(keyframe => keyframe.cameraId !== id),
+        },
       },
       selectedCameraId: s.selectedCameraId === id ? null : s.selectedCameraId,
+      selectedPathPointId:
+        s.selectedPathPointId && deletedPathIds.has(s.selectedPathPointId)
+          ? null
+          : s.selectedPathPointId,
     }
   }),
 
@@ -470,13 +488,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   toggleFovCones: () => set((s) => ({ showFovCones: !s.showFovCones })),
 
   // --- Project actions ---
-  loadProject: (data) => set({
-    project: data,
-    selectedCameraId: null,
-    selectedObjectId: null,
-    selectedActorId: null,
-    selectedPathPointId: null,
-  }),
+  loadProject: (data) => {
+    clearHistory()
+    set({
+      project: structuredClone(data),
+      selectedCameraId: null,
+      selectedObjectId: null,
+      selectedActorId: null,
+      selectedPathPointId: null,
+    })
+  },
 
   getProjectData: () => get().project,
 
@@ -500,5 +521,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
 function pushHistory(project: ProjectData): void {
   historyStack.push(structuredClone(project))
   if (historyStack.length > MAX_HISTORY) historyStack.shift()
+  redoStack.length = 0
+}
+
+function clearHistory(): void {
+  historyStack.length = 0
   redoStack.length = 0
 }

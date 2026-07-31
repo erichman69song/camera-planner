@@ -4,6 +4,9 @@ import { Camera } from './camera'
 import { Actor } from './actor'
 import { SceneConfig, SceneObject } from './scene'
 
+/** Current serialized project schema version. */
+export const PROJECT_SCHEMA_VERSION = '4.0'
+
 export interface ProjectData {
   version: string
   cameras: Camera[]
@@ -51,7 +54,7 @@ export interface TimelineKeyframe {
 
 export function createEmptyProject(): ProjectData {
   return {
-    version: '4.0',
+    version: PROJECT_SCHEMA_VERSION,
     cameras: [],
     actors: [],
     scene: {
