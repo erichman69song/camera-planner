@@ -222,6 +222,29 @@ export function createSceneController({container,monitorCanvas,bridge,onSelect=(
     }
   });
   engine.start();syncProject(bridge.getState().project);
+  function captureMonitor({cameraId,width=960}={}) {
+    if(!monitor||disposed)return null;
+    const id=cameraId||project?.referenceScene?.referenceCameraId||monitorId;
+    const camera=cameras.getCamera(id),group=cameras.getMeshGroup(id);
+    if(!camera||!group)return null;
+    const data={...camera,position:{x:group.position.x,y:group.position.y,z:group.position.z},rotation:{yaw:degrees(group.rotation.y),pitch:degrees(group.rotation.x),roll:degrees(group.rotation.z)}};
+    const helpers=[...engine.getHelperObjects(),...cameras.getAllMeshGroups(),...paths.getVisualObjects(),...actors.getHelperObjects(),...lighting.getHelperObjects(),helper,outline,proxy];
+    const previousMode=monitor.getMode(),visibility=helpers.map(obj=>({obj,visible:obj.visible}));
+    const aspect=data.sensorW/data.sensorH;
+    if(!Number.isFinite(aspect)||aspect<=0)throw new Error('摄影机画幅比例无效');
+    let snapshotWidth=Math.max(256,Math.min(1280,Math.round(Number(width)||960))),snapshotHeight=Math.max(1,Math.round(snapshotWidth/aspect));
+    if(snapshotHeight>1280){snapshotHeight=1280;snapshotWidth=Math.max(1,Math.round(snapshotHeight*aspect));}
+    try {
+      monitor.setMode('rgb');monitor.syncCamera(data);
+      monitor.renderer.setPixelRatio(1);monitor.renderer.setSize(snapshotWidth,snapshotHeight,false);
+      helpers.forEach(obj=>{obj.visible=false;});
+      monitor.renderer.render(engine.scene,monitor.camera);
+      return {dataUrl:monitor.renderer.domElement.toDataURL('image/jpeg',.9),width:snapshotWidth,height:snapshotHeight,cameraId:id,name:data.name};
+    } finally {
+      visibility.forEach(({obj,visible})=>{obj.visible=visible;});monitor.setMode(previousMode);
+      monitor.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));monitor.syncCamera(data);
+    }
+  }
   return {
     canvas,engine,setMode,setSpace,setSelection,syncProject,setHelpers,focusSelection,resetView,setView,
     cancelTransform:()=>finishTransform(true),
@@ -230,7 +253,7 @@ export function createSceneController({container,monitorCanvas,bridge,onSelect=(
     getInsertionPoint:()=>({x:engine.controls.target.x,y:0,z:engine.controls.target.z}),getSelectionScreenPosition:screenPosition,getSelectionWorldPosition:()=>groupFor()?.getWorldPosition(new T.Vector3())||null,
     getDisplayedTransform:displayedTransform,
     getTransformState:()=>({mode,space,axis:transform.axis,dragging:!!transaction,keyboard:keyboardOperation,selection:selection?{...selection}:null}),
-    takeScreenshot:()=>engine.exportPNGBlob(),
+    takeScreenshot:()=>engine.exportPNGBlob(),captureMonitor,
     dispose(){if(disposed)return;if(transaction)finishTransform(true);disposed=true;subscriptions.forEach(fn=>fn());unsubscribeFrame();transform.dispose();monitor?.dispose();outline.children.forEach(line=>line.geometry.dispose());outlineMaterial.dispose();actors.dispose();paths.dispose();lighting.dispose();objects.clearAll();cameras.clearAll();engine.dispose();},
   };
 }

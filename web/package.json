@@ -1,6 +1,6 @@
 {
   "name": "@muraguchi/camera-planner-workspace",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
+    "build:worker": "npm run build && node scripts/build-worker.mjs",
     "test": "npm run build && node --test tests/*.test.mjs"
   }
 }

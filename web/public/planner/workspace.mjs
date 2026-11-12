@@ -1,6 +1,8 @@
 import { createSceneController } from './scene-controller.mjs';
 import { entityEntries, entityFor, selectionFromState, applyEntityPatch, selectEntity, removeEntity, duplicateEntity, makeEntity } from './workspace-state.mjs';
 import { mountLensPlanner } from './lens-planner.mjs';
+import { mountReferenceWorkspace } from './reference-workspace.mjs';
+import { createSceneToolInterface } from './scene-tool-interface.mjs';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(n,d=2)=>Number.isFinite(n)?String(Number(n.toFixed(d))):'—';
@@ -37,7 +39,7 @@ export function mountWorkspace(bridge){
     <dialog class="ws-board ws-dialog" aria-label="分镜一览"><header><h2>分镜一览</h2><div><button data-board-size="3x3">3 × 3</button><button data-board-size="5x5">5 × 5</button>${toolButton('close','关闭分镜一览','data-action="close-board"')}</div></header><div class="ws-board-grid"></div></dialog>
   </main>`;
   const app=root.firstElementChild,$=s=>app.querySelector(s),$$=s=>[...app.querySelectorAll(s)];
-  let controller,selection=null,lastSelectionKey='',inspectorHidden=false,pinned=false,space='world',mode='select',monitorCamera='',lastPointer={x:window.innerWidth*.55,y:window.innerHeight*.35},toastTimer,tooltipTimer,hoverTimer,saveTimer,raf=0,lastFrame=0,draggingInspector=false;
+  let controller,referenceWorkspace,sceneTools,selection=null,lastSelectionKey='',inspectorHidden=false,pinned=false,space='world',mode='select',monitorCamera='',lastPointer={x:window.innerWidth*.55,y:window.innerHeight*.35},toastTimer,tooltipTimer,hoverTimer,saveTimer,raf=0,lastFrame=0,draggingInspector=false;
   const toast=message=>{ $('.ws-toast').textContent=message;$('.ws-toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('.ws-toast').hidden=true,3000);};
   const closePopovers=()=>{$('.ws-outliner').hidden=true;$('.ws-create').hidden=true;};
   let lastMonitorText='';const editedValues=new WeakMap();
@@ -136,7 +138,9 @@ export function mountWorkspace(bridge){
     controller=createSceneController({container:$('.ws-scene'),monitorCanvas:$('.ws-monitor-canvas'),bridge,onMonitor:({text})=>{if(text!==lastMonitorText){lastMonitorText=text;$('.ws-monitor-info').textContent=text;}},onSelect:hit=>{hideHover();select(hit?{type:hit.type,id:hit.id}:null,hit);},onHover,onModeChange:next=>{mode=next;$$('[data-tool]').forEach(b=>{b.classList.toggle('is-active',b.dataset.tool===next);b.setAttribute('aria-pressed',String(b.dataset.tool===next));});},onTransform:status=>{hideHover();const el=$('.ws-transform-status');el.hidden=!status;if(status)el.textContent=typeof status==='string'?status:(status.text||`${mode==='rotate'?'旋转':'移动'} · ${status.axis||''}`);}});
     bridge.outputManager?.setPNGExporter(()=>controller.takeScreenshot());
     bridge.subscribe(render);render(bridge.getState());setMode('select');mountLensPlanner(bridge);
+    referenceWorkspace=mountReferenceWorkspace({bridge,controller,notify:toast});
+    sceneTools=createSceneToolInterface({bridge,controller,notify:toast});
     function tick(now){const delta=lastFrame?Math.min(.1,(now-lastFrame)/1000):0;lastFrame=now;const t=bridge.getState().project.timeline;if(t.playing){const time=Math.min(t.duration,t.currentTime+delta);bridge.getState().setTimelineTime(time);if(time>=t.duration)bridge.getState().setTimelinePlaying(false);}raf=requestAnimationFrame(tick);}raf=requestAnimationFrame(tick);
   }catch(error){console.error(error);$('.ws-scene').innerHTML=`<div class="ws-scene-error"><b>三维场景暂未启动</b><p>${esc(error.message)}</p><p>请重新加载页面；场景数据仍保留在此浏览器中。</p></div>`;toast('三维场景初始化失败');}
-  return {controller,dispose:()=>{cancelAnimationFrame(raf);controller?.dispose();}};
+  return {controller,referenceWorkspace,sceneTools,dispose:()=>{cancelAnimationFrame(raf);referenceWorkspace?.dispose();sceneTools?.dispose();controller?.dispose();}};
 }

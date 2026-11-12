@@ -18,6 +18,18 @@ npm run workspace:test
 
 构建产物位于 `web/dist/`，可整体发布到静态服务器或任意站点子目录。根 `index.html` 通过相对地址打开 `web/public/planner/index.html`，适用于从仓库根目录发布 GitHub Pages；构建后的 `web/dist/index.html` 则通过 `./planner/index.html` 打开工作台。请通过 HTTP 服务访问，避免直接以 `file://` 打开 ES 模块。
 
+## 参考图建场与 LLM 地编
+
+顶部“参考图建场”支持上传 JPG/PNG/WebP（最多 8 MB，发送前缩小至最长边 1600 像素），填写空间关系与已知尺寸，生成可检查的场景草稿。选择新建或编辑当前场景；新建只在点击“应用到场景”时替换布景，可一次撤销。生成的基础体和参考机位直接使用现有编辑工具。
+
+“DeepSeek 模型设置”中自行输入 Key。参考图、密钥和会话仅保留在当前页面内存，刷新后清除；场景文件保留参考图的名称/尺寸等元数据，不包含图片和 Key。点击生成或校正才向 DeepSeek 发送所选图片、描述和必要场景参数。`deepseek-flash` 支持图片；`deepseek-v4-pro` 用于文字工具测试，也可勾选仅文字模式。模型能力依照 [DeepSeek 官方文档](https://api-docs.deepseek.com/)核对。
+
+对照使用参考图与真实参考机位截图，可并排或叠加。手工三轴调整后刷新机位，再描述要校正的部分。单图不能唯一恢复绝对尺度、原始焦段或画外几何；全景图目前作局部透视窗口的近似，页面会提示投影/画幅限制。不自动宣称 80% 还原率。
+
+无需密钥时，可在“LLM 工具测试”下载工具定义及当前场景，交给 LLM 生成调用数组，再粘贴并运行草稿。也提供页面内工具与可用浏览器的 WebMCP 接口，见 [场景工具接口](docs/scene-tools.md)。
+
+本地 `npm run dev` 已提供 `/api/llm/chat` 的 DeepSeek 转发。`npm run build:worker` 另产出 `web/worker-dist/server/index.js`，适合 Worker ES module 环境；转发地址固定为 DeepSeek，用户 Key 随单次请求使用，不在服务器保存。普通静态部署和 GitHub Pages 仍能编辑场景及使用离线工具测试，但真实模型调用需要同源 `/api/llm/chat` 服务。
+
 ## 使用与保存
 
 - `G` 移动、`R` 旋转、`S` 缩放；变换过程中用 `X / Y / Z` 限轴，`Shift` 加轴键限定相应平面，`Esc` 取消。一次完成的变换对应一次撤销记录。
@@ -33,6 +45,6 @@ npm run workspace:test
 
 ## 与根 npm 组件的关系
 
-这是独立工作台，版本为 `0.2.0`。根目录的 `@muraguchi/camera-planner` npm 组件仍保留原有包名、版本、`main / exports / types` 接口、构建命令，以及 `src/`、`demo/`、`dist/`。独立工作台的升级不表示这些旧组件源码已同步重构；集成 npm 组件仍应遵循根目录的组件接口说明。
+这是独立工作台，版本为 `0.3.0`。根目录的 `@muraguchi/camera-planner` npm 组件仍保留原有包名、版本、`main / exports / types` 接口、构建命令，以及 `src/`、`demo/`、`dist/`。独立工作台的升级不表示这些旧组件源码已同步重构；集成 npm 组件仍应遵循根目录的组件接口说明。
 
 `public/planner/` 中保留可读的工作台、镜头计算与状态模块，并复用 `assets/planner-core-v6.js` 中已打包的三维运行时。Three.js TransformControls 及其 MIT 许可位于 `public/planner/vendor/`。修改后运行测试和构建，再发布完整的静态产物。
