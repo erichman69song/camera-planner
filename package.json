@@ -21,7 +21,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "workspace:dev": "npm --prefix web run dev",
+    "workspace:build": "npm --prefix web run build",
+    "workspace:test": "npm --prefix web test"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

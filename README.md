@@ -2,6 +2,24 @@
 
 3D 机位规划组件，为 Muraguchi AI 影视创作平台构建。纯前端 npm 包，数据由 Muraguchi 主项目后端管理。
 
+## 重大推进：场景工作台 v0.2.0
+
+2026-11-12 · `workspace-v0.2.0`
+
+新增以场景为中心的独立 Web 工作台：工具按需浮出、指针旁属性、Blender 式三轴与平面移动、圆环旋转，以及镜头换算和运镜提示词导出。原 React 组件源码、包入口和演示保留。
+
+- [线上工作台](https://muraguchi-camera-planner.erichman69song.chatgpt.site/)
+- [工作台运行与构建说明](web/README.md)
+- [重大更新记录](CHANGELOG.md)
+
+```bash
+npm run workspace:dev
+npm run workspace:test
+npm run workspace:build
+```
+
+独立工作台只需 Node.js，无需安装组件开发依赖。仓库首页已接入新版工作台；下文说明原 React 组件的集成方式。
+
 ## 快速开始
 
 ```bash
@@ -38,7 +56,7 @@ function MyPage() {
 - JSON 项目导出 / PNG 视口截图
 - 撤销/重做（Ctrl+Z / Ctrl+Y）
 
-## 五面板布局
+## 原 React 组件布局
 
 ```
 ┌──────────────────────────────────────────────┐
